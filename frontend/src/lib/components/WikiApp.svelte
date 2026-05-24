@@ -232,14 +232,15 @@
 	<!-- Login Status -->
 	<div id="login-status">
 		{#if user}
-			<span><a href="/user:info/{user.username}">{user.username}</a></span>
+			<span class="welcome">欢迎, <a href="/user:info/{user.username}">{user.username}</a></span>
 			{#if notifCount > 0}
-				<a href="#" class="notif-bell" title="通知">({notifCount})</a>
+				<a href="#" class="notif-badge" title="你有 {notifCount} 条未读通知">通知 ({notifCount})</a>
 			{/if}
-			<a href="/account:settings">设置</a>
+			<a href="/account:settings">我的账户</a>
 			<a href="#" onclick={(e) => { e.preventDefault(); logout(); }}>退出</a>
 		{:else}
-			<a href="/auth:login">登录</a> | <a href="/auth:register">注册</a>
+			<span class="guest-hint">你尚未登录。</span>
+			<a href="/auth:login">登录</a> | <a href="/auth:register">创建账户</a>
 		{/if}
 	</div>
 

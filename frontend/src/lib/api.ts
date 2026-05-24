@@ -17,11 +17,37 @@ class ApiClient {
 	private refreshToken: string | null = null;
 	private refreshing: Promise<boolean> | null = null;
 
+	private getCookieDomain(): string {
+		if (typeof window === 'undefined') return '';
+		const host = window.location.hostname;
+		const parts = host.split('.');
+		if (parts.length >= 2) {
+			return '.' + parts.slice(-2).join('.');
+		}
+		return host;
+	}
+
+	private setCookie(name: string, value: string, days: number) {
+		const domain = this.getCookieDomain();
+		const expires = new Date(Date.now() + days * 864e5).toUTCString();
+		document.cookie = `${name}=${encodeURIComponent(value)};expires=${expires};path=/;domain=${domain};SameSite=Lax`;
+	}
+
+	private getCookie(name: string): string | null {
+		const match = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+		return match ? decodeURIComponent(match[1]) : null;
+	}
+
+	private deleteCookie(name: string) {
+		const domain = this.getCookieDomain();
+		document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;domain=${domain}`;
+	}
+
 	constructor(baseUrl: string) {
 		this.baseUrl = `${baseUrl}/api/v1`;
 		if (typeof window !== 'undefined') {
-			this.token = localStorage.getItem('folia_token');
-			this.refreshToken = localStorage.getItem('folia_refresh_token');
+			this.token = this.getCookie('folia_token') || localStorage.getItem('folia_token');
+			this.refreshToken = this.getCookie('folia_refresh') || localStorage.getItem('folia_refresh_token');
 		}
 	}
 
@@ -30,8 +56,10 @@ class ApiClient {
 		if (typeof window !== 'undefined') {
 			if (token) {
 				localStorage.setItem('folia_token', token);
+				this.setCookie('folia_token', token, 1);
 			} else {
 				localStorage.removeItem('folia_token');
+				this.deleteCookie('folia_token');
 			}
 		}
 	}
@@ -41,10 +69,20 @@ class ApiClient {
 		if (typeof window !== 'undefined') {
 			if (token) {
 				localStorage.setItem('folia_refresh_token', token);
+				this.setCookie('folia_refresh', token, 7);
 			} else {
 				localStorage.removeItem('folia_refresh_token');
+				this.deleteCookie('folia_refresh');
 			}
 		}
+	}
+
+	isLoggedIn(): boolean {
+		return !!this.token;
+	}
+
+	getToken(): string | null {
+		return this.token;
 	}
 
 	private async tryRefresh(): Promise<boolean> {
