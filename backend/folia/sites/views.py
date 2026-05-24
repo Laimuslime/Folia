@@ -44,6 +44,10 @@ class SiteViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
+        owned_count = Admin.objects.filter(user=request.user, founder=True).count()
+        if owned_count >= 5:
+            return Response({"detail": "每个用户最多创建 5 个站点。"}, status=status.HTTP_400_BAD_REQUEST)
+
         if Site.objects.filter(slug=data["slug"]).exists():
             return Response({"detail": "Site slug already taken."}, status=status.HTTP_400_BAD_REQUEST)
 
