@@ -80,7 +80,7 @@ class Page(models.Model):
 
     @property
     def current_source(self):
-        src = self.sources.order_by("-source_id").first()
+        src = self.sources.order_by("-id").first()
         return src.text if src else ""
 
     @property
