@@ -25,6 +25,7 @@
 	let loginPassword = $state('');
 	let regForm = $state({ username: '', email: '', password: '', passwordConfirm: '' });
 	let notifCount = $state(0);
+	let globalError = $state('');
 
 	onMount(async () => {
 		try {
@@ -160,25 +161,38 @@
 
 	async function savePage(event: CustomEvent<{title: string; source: string; comment: string}>) {
 		const { title, source, comment } = event.detail;
-		if (page) {
-			page = await api.editPage(page.unix_name, { title, source, comment });
-		} else {
-			page = await api.createPage({ slug: currentPageSlug, title, source });
+		try {
+			if (page) {
+				page = await api.editPage(page.unix_name, { title, source, comment });
+			} else {
+				page = await api.createPage({ slug: currentPageSlug, title, source });
+			}
+			mode = 'view';
+		} catch (e: any) {
+			globalError = e.message;
 		}
-		mode = 'view';
 	}
 
 	async function vote(value: number) {
 		if (!page) return;
-		const result = await api.votePage(page.unix_name, value);
-		page = { ...page, rate: result.rating };
+		try {
+			const result = await api.votePage(page.unix_name, value);
+			page = { ...page, rate: result.rating };
+		} catch (e: any) {
+			globalError = e.message;
+		}
 	}
 
 	async function login(username: string, password: string) {
-		await api.login(username, password);
-		user = await api.getProfile();
-		if (mode === 'login') {
-			window.location.href = '/';
+		try {
+			await api.login(username, password);
+			user = await api.getProfile();
+			if (mode === 'login') {
+				window.location.href = '/';
+			}
+		} catch (e: any) {
+			globalError = e.message;
+			throw e;
 		}
 	}
 
@@ -188,8 +202,12 @@
 	}
 
 	async function handleRegister() {
-		await api.register(regForm.username, regForm.email, regForm.password, regForm.passwordConfirm);
-		await login(regForm.username, regForm.password);
+		try {
+			await api.register(regForm.username, regForm.email, regForm.password, regForm.passwordConfirm);
+			await login(regForm.username, regForm.password);
+		} catch (e: any) {
+			globalError = e.message;
+		}
 	}
 </script>
 
@@ -224,6 +242,12 @@
 			<a href="/auth:login">登录</a> | <a href="/auth:register">注册</a>
 		{/if}
 	</div>
+
+	{#if globalError}
+		<div class="error-block" style="position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:9999;margin-top:5px;cursor:pointer;max-width:600px;" onclick={() => globalError = ''}>
+			{globalError} <small>(点击关闭)</small>
+		</div>
+	{/if}
 
 	<!-- Search -->
 	<div id="search-top-box">
@@ -290,7 +314,8 @@
 			{:else if mode === 'login'}
 				<div id="page-title">登录</div>
 				<div id="page-content">
-					<form onsubmit={(e) => { e.preventDefault(); login(loginUsername, loginPassword); }}>
+					{#if globalError}<div class="error-block">{globalError}</div>{/if}
+					<form onsubmit={(e) => { e.preventDefault(); globalError = ''; login(loginUsername, loginPassword); }}>
 						<div class="form-group"><label>用户名：</label><input type="text" bind:value={loginUsername}></div>
 						<div class="form-group"><label>密码：</label><input type="password" bind:value={loginPassword}></div>
 						<button class="btn btn-primary" type="submit">登录</button>
@@ -299,7 +324,8 @@
 			{:else if mode === 'register'}
 				<div id="page-title">注册</div>
 				<div id="page-content">
-					<form onsubmit={(e) => { e.preventDefault(); handleRegister(); }}>
+					{#if globalError}<div class="error-block">{globalError}</div>{/if}
+					<form onsubmit={(e) => { e.preventDefault(); globalError = ''; handleRegister(); }}>
 						<div class="form-group"><label>用户名：</label><input type="text" bind:value={regForm.username}></div>
 						<div class="form-group"><label>邮箱：</label><input type="email" bind:value={regForm.email}></div>
 						<div class="form-group"><label>密码：</label><input type="password" bind:value={regForm.password}></div>

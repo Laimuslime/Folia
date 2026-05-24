@@ -22,6 +22,7 @@
 	let parentSlug = $state('');
 	let backlinks = $state<any[]>([]);
 	let watching = $state(false);
+	let actionError = $state('');
 
 	onMount(async () => {
 		await tick();
@@ -32,46 +33,58 @@
 	});
 
 	async function toggleWatch() {
-		if (watching) {
-			await api.unwatchPage(page.unix_name);
-			watching = false;
-		} else {
-			await api.watchPage(page.unix_name);
-			watching = true;
-		}
+		try {
+			if (watching) {
+				await api.unwatchPage(page.unix_name);
+				watching = false;
+			} else {
+				await api.watchPage(page.unix_name);
+				watching = true;
+			}
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	async function handleRename() {
 		if (!renameSlug.trim()) return;
-		await api.renamePage(page.unix_name, renameSlug.trim());
-		showRenameDialog = false;
-		window.location.href = '/' + renameSlug.trim();
+		try {
+			await api.renamePage(page.unix_name, renameSlug.trim());
+			showRenameDialog = false;
+			window.location.href = '/' + renameSlug.trim();
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	async function handleDelete() {
-		await api.deletePage(page.unix_name);
-		showDeleteDialog = false;
-		window.location.href = '/';
+		try {
+			await api.deletePage(page.unix_name);
+			showDeleteDialog = false;
+			window.location.href = '/';
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	async function handleSetParent() {
-		await api.setPageParent(page.unix_name, parentSlug.trim() || null);
-		showParentDialog = false;
-		onPageChange?.();
+		try {
+			await api.setPageParent(page.unix_name, parentSlug.trim() || null);
+			showParentDialog = false;
+			onPageChange?.();
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	async function loadBacklinks() {
-		backlinks = await api.getBacklinks(page.unix_name);
-		showBacklinks = true;
+		try {
+			backlinks = await api.getBacklinks(page.unix_name);
+			showBacklinks = true;
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	async function toggleBlock() {
-		if (page.blocked) {
-			await api.unblockPage(page.unix_name);
-		} else {
-			await api.blockPage(page.unix_name);
-		}
-		onPageChange?.();
+		try {
+			if (page.blocked) {
+				await api.unblockPage(page.unix_name);
+			} else {
+				await api.blockPage(page.unix_name);
+			}
+			onPageChange?.();
+		} catch (e: any) { actionError = e.message; }
 	}
 
 	function openTagEditor() {
@@ -80,10 +93,12 @@
 	}
 
 	async function saveTags() {
-		const tags = editingTags.split(/\s+/).filter(Boolean).map((t: string) => t.toLowerCase());
-		await api.editPage(page.unix_name, { tags });
-		showTagEditor = false;
-		onPageChange?.();
+		try {
+			const tags = editingTags.split(/\s+/).filter(Boolean).map((t: string) => t.toLowerCase());
+			await api.editPage(page.unix_name, { tags });
+			showTagEditor = false;
+			onPageChange?.();
+		} catch (e: any) { actionError = e.message; }
 	}
 </script>
 
@@ -152,6 +167,13 @@
 	修订版本: {page.revision_number ?? 0}, 最后编辑:
 	{page.date_last_edited ? new Date(page.date_last_edited).toLocaleString() : '未知'}
 </div>
+
+<!-- Action Error -->
+{#if actionError}
+	<div class="error-block" style="cursor:pointer" onclick={() => actionError = ''}>
+		{actionError} <small>(点击关闭)</small>
+	</div>
+{/if}
 
 <!-- Page Options Bottom Bar -->
 <div id="page-options-bottom">

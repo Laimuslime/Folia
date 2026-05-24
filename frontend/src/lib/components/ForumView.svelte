@@ -15,6 +15,7 @@
 	let newThreadForm = $state({ title: '', description: '', content: '' });
 	let replyForm = $state({ content: '', parentId: null as number | null });
 	let showReply = $state(false);
+	let forumError = $state('');
 
 	onMount(async () => {
 		await loadGroups();
@@ -54,24 +55,26 @@
 
 	async function submitThread() {
 		if (!currentCategory) return;
+		forumError = '';
 		try {
 			await api.createThread(currentCategory.id, newThreadForm.title, newThreadForm.content);
 			newThreadForm = { title: '', description: '', content: '' };
 			await openCategory(currentCategory);
 		} catch (e: any) {
-			alert(e.message);
+			forumError = e.message;
 		}
 	}
 
 	async function submitReply() {
 		if (!currentThread) return;
+		forumError = '';
 		try {
 			await api.createPost(currentThread.id, replyForm.content, replyForm.parentId || undefined);
 			replyForm = { content: '', parentId: null };
 			showReply = false;
 			await openThread(currentThread);
 		} catch (e: any) {
-			alert(e.message);
+			forumError = e.message;
 		}
 	}
 </script>
@@ -93,6 +96,12 @@
 		&raquo; {currentThread?.title}
 	{/if}
 </div>
+
+{#if forumError}
+	<div class="error-block" style="cursor:pointer" onclick={() => forumError = ''}>
+		{forumError} <small>(点击关闭)</small>
+	</div>
+{/if}
 
 {#if loading}
 	<p>加载中...</p>

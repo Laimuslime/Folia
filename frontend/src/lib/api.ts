@@ -1,5 +1,16 @@
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
+function formatApiError(err: any): string {
+	if (typeof err === 'string') return err;
+	if (err.detail) return err.detail;
+	if (err.non_field_errors) return err.non_field_errors.join('; ');
+	const fields = Object.keys(err).filter(k => Array.isArray(err[k]));
+	if (fields.length > 0) {
+		return fields.map(k => `${k}: ${err[k].join(', ')}`).join('; ');
+	}
+	return '请求失败';
+}
+
 class ApiClient {
 	private baseUrl: string;
 	private token: string | null = null;
@@ -49,7 +60,7 @@ class ApiClient {
 				return response.json();
 			}
 			const error = await response.json().catch(() => ({ detail: response.statusText }));
-			throw new Error(error.detail || 'Request failed');
+			throw new Error(formatApiError(error));
 		}
 
 		if (response.status === 204) return null;
@@ -100,7 +111,7 @@ class ApiClient {
 		const response = await fetch(`${this.baseUrl}/auth/avatar/`, { method: 'POST', headers, body: formData });
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ detail: response.statusText }));
-			throw new Error(error.detail || 'Upload failed');
+			throw new Error(formatApiError(error));
 		}
 		return response.json();
 	}
@@ -295,7 +306,7 @@ class ApiClient {
 		});
 		if (!response.ok) {
 			const error = await response.json().catch(() => ({ detail: response.statusText }));
-			throw new Error(error.detail || 'Upload failed');
+			throw new Error(formatApiError(error));
 		}
 		return response.json();
 	}

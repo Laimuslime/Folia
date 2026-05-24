@@ -8,6 +8,7 @@
 	let loading = $state(true);
 	let uploading = $state(false);
 	let fileInput: HTMLInputElement;
+	let fileError = $state('');
 
 	onMount(async () => {
 		await loadFiles();
@@ -25,6 +26,7 @@
 	async function handleUpload() {
 		if (!fileInput?.files?.length) return;
 		uploading = true;
+		fileError = '';
 		try {
 			for (const file of fileInput.files) {
 				await api.uploadFile(pageSlug, file);
@@ -32,7 +34,7 @@
 			fileInput.value = '';
 			await loadFiles();
 		} catch (e: any) {
-			alert(e.message);
+			fileError = e.message;
 		}
 		uploading = false;
 	}
@@ -45,6 +47,12 @@
 </script>
 
 <div id="page-title">文件：{pageSlug}</div>
+
+{#if fileError}
+	<div class="error-block" style="cursor:pointer" onclick={() => fileError = ''}>
+		{fileError} <small>(点击关闭)</small>
+	</div>
+{/if}
 
 {#if loading}
 	<p>加载文件...</p>

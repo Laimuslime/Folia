@@ -10,6 +10,7 @@
 	let diffResult = $state('');
 	let showDiff = $state(false);
 	let selectedRevs = $state<number[]>([]);
+	let historyError = $state('');
 
 	onMount(async () => {
 		await loadRevisions();
@@ -28,13 +29,13 @@
 		try {
 			viewingSource = await api.getPageSource(pageSlug, revNum);
 		} catch (e: any) {
-			alert(e.message);
+			historyError = e.message;
 		}
 	}
 
 	async function viewDiff() {
 		if (selectedRevs.length !== 2) {
-			alert('请选择 2 个版本进行对比。');
+			historyError = '请选择 2 个版本进行对比。';
 			return;
 		}
 		const [a, b] = selectedRevs.sort((x, y) => x - y);
@@ -47,7 +48,7 @@
 			diffResult = result.body || '';
 			showDiff = true;
 		} catch (e: any) {
-			alert(e.message);
+			historyError = e.message;
 		}
 	}
 
@@ -65,6 +66,12 @@
 </script>
 
 <div id="page-title">历史记录：{pageSlug}</div>
+
+{#if historyError}
+	<div class="error-block" style="cursor:pointer" onclick={() => historyError = ''}>
+		{historyError} <small>(点击关闭)</small>
+	</div>
+{/if}
 
 {#if loading}
 	<p>加载修订历史...</p>

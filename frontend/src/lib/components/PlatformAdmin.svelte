@@ -10,6 +10,7 @@
 	let loading = $state(true);
 	let siteSearch = $state('');
 	let userSearch = $state('');
+	let adminError = $state('');
 
 	onMount(async () => {
 		await loadSites();
@@ -41,29 +42,35 @@
 	}
 
 	async function suspendSite(siteId: number) {
-		await api.platformSuspendSite(siteId);
-		await loadSites();
+		try { await api.platformSuspendSite(siteId); await loadSites(); }
+		catch (e: any) { adminError = e.message; }
 	}
 
 	async function deleteSite(siteId: number) {
 		if (!confirm('确定永久删除该站点？此操作不可撤销。')) return;
-		await api.platformDeleteSite(siteId);
-		await loadSites();
+		try { await api.platformDeleteSite(siteId); await loadSites(); }
+		catch (e: any) { adminError = e.message; }
 	}
 
 	async function banUser(userId: number) {
 		const reason = prompt('封禁原因：') || '';
-		await api.platformBanUser(userId, reason);
-		await loadUsers();
+		try { await api.platformBanUser(userId, reason); await loadUsers(); }
+		catch (e: any) { adminError = e.message; }
 	}
 
 	async function unbanUser(userId: number) {
-		await api.platformUnbanUser(userId);
-		await loadUsers();
+		try { await api.platformUnbanUser(userId); await loadUsers(); }
+		catch (e: any) { adminError = e.message; }
 	}
 </script>
 
 <div id="page-title">平台管理</div>
+
+{#if adminError}
+	<div class="error-block" style="cursor:pointer" onclick={() => adminError = ''}>
+		{adminError} <small>(点击关闭)</small>
+	</div>
+{/if}
 
 {#if loading}
 	<p>加载中...</p>
