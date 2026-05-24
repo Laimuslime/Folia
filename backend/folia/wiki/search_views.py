@@ -11,7 +11,7 @@ class SearchView(APIView):
     def get(self, request):
         site = getattr(request, "current_site", None)
         if not site:
-            return Response({"detail": "Site required."}, status=400)
+            return Response({"detail": "需要站点上下文。"}, status=400)
 
         query = request.query_params.get("q", "")
         if not query:

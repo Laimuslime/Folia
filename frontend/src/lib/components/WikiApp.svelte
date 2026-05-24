@@ -66,7 +66,7 @@
 		const path = window.location.pathname.slice(1) || site.default_page || 'start';
 		currentPageSlug = path;
 
-		// Route based on path prefix
+		// 根据路径前缀路由
 		if (path === 'forum:start' || path.startsWith('forum:')) {
 			mode = 'forum';
 			loading = false;
@@ -125,7 +125,7 @@
 			return;
 		}
 
-		// Load page
+		// 加载页面
 		try {
 			const result = await api.getPage(currentPageSlug);
 			if (result?.redirect) {
@@ -139,12 +139,12 @@
 			page = null;
 		}
 
-		// Load sidebar
+		// 加载侧栏
 		try {
 			const sidebar = await api.getPage('nav:side');
 			sidebarHtml = sidebar?.compiled_html || '';
 		} catch {
-			sidebarHtml = '<ul><li><a href="/">Main</a></li><li><a href="/system:list-all-pages">All Pages</a></li></ul>';
+			sidebarHtml = '<ul><li><a href="/">首页</a></li><li><a href="/system:list-all-pages">所有页面</a></li></ul>';
 		}
 
 		loading = false;

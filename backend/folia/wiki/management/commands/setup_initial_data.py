@@ -9,10 +9,10 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Set up initial data: licenses, themes, and optionally a demo site"
+    help = "初始化数据：许可证、主题，可选创建演示站点"
 
     def add_arguments(self, parser):
-        parser.add_argument("--demo", action="store_true", help="Create a demo site")
+        parser.add_argument("--demo", action="store_true", help="创建演示站点")
 
     def handle(self, *args, **options):
         self._create_licenses()
@@ -21,7 +21,7 @@ class Command(BaseCommand):
         if options["demo"]:
             self._create_demo_site()
 
-        self.stdout.write(self.style.SUCCESS("Initial data created."))
+        self.stdout.write(self.style.SUCCESS("初始数据已创建。"))
 
     def _create_licenses(self):
         licenses = [
@@ -58,8 +58,8 @@ class Command(BaseCommand):
             return
 
         site = Site.objects.create(
-            unix_name="demo", slug="demo", name="Demo Wiki",
-            subtitle="A demonstration wiki", description="This is a demo wiki for testing Folia.",
+            unix_name="demo", slug="demo", name="演示 Wiki",
+            subtitle="演示站点", description="这是 Folia Wiki 农场的演示站点。",
         )
         SiteSettings.objects.create(site=site)
         Admin.objects.create(site=site, user=admin_user, founder=True)
@@ -69,25 +69,25 @@ class Command(BaseCommand):
         nav_cat, _ = Category.objects.get_or_create(site=site, name="nav")
 
         pages_data = [
-            ("start", "Welcome", default_cat, (
-                "+ Welcome to the Demo Wiki\n\n"
-                "This is a demonstration of the Folia wiki farm platform.\n\n"
-                "++ Features\n\n"
-                "* Full Wikidot syntax support\n"
-                "* Module system (ListPages, Rate, TagCloud, etc.)\n"
-                "* Forum system\n"
-                "* File management\n"
-                "* Version history\n\n"
-                "[[collapsible show=\"+ Click to expand\" hide=\"- Click to collapse\"]]\n"
-                "This is hidden content inside a collapsible block.\n"
+            ("start", "欢迎", default_cat, (
+                "+ 欢迎来到演示 Wiki\n\n"
+                "这是 Folia Wiki 农场平台的演示站点。\n\n"
+                "++ 功能\n\n"
+                "* 完整的 Wikidot 语法支持\n"
+                "* 模块系统（ListPages、Rate、TagCloud 等）\n"
+                "* 论坛系统\n"
+                "* 文件管理\n"
+                "* 版本历史\n\n"
+                "[[collapsible show=\"+ 点击展开\" hide=\"- 点击收起\"]]\n"
+                "这是折叠块中的隐藏内容。\n"
                 "[[/collapsible]]\n\n"
                 "[[module Rate]]\n"
             )),
-            ("side", "Side Navigation", nav_cat, (
-                "* [/ Home]\n"
-                "* [/system:list-all-pages All Pages]\n"
-                "* [/system:recent-changes Recent Changes]\n"
-                "* [/forum:start Forum]\n"
+            ("side", "侧边导航", nav_cat, (
+                "* [/ 首页]\n"
+                "* [/system:list-all-pages 所有页面]\n"
+                "* [/system:recent-changes 最近更改]\n"
+                "* [/forum:start 论坛]\n"
             )),
         ]
 
@@ -99,9 +99,9 @@ class Command(BaseCommand):
             PageSource.objects.create(page=page, text=source_text)
             PageCompiled.objects.create(page=page, text=render_wikidot_markup(source_text, site))
 
-        # Forum
-        group = ForumGroup.objects.create(site=site, name="General", description="General discussion")
-        ForumCategory.objects.create(group=group, site=site, name="General Discussion", description="Talk about anything")
-        ForumCategory.objects.create(group=group, site=site, name="Help & Questions", description="Ask for help")
+        # 论坛
+        group = ForumGroup.objects.create(site=site, name="综合", description="综合讨论")
+        ForumCategory.objects.create(group=group, site=site, name="综合讨论", description="随便聊聊")
+        ForumCategory.objects.create(group=group, site=site, name="帮助与提问", description="寻求帮助")
 
-        self.stdout.write(self.style.SUCCESS("  Demo site created at demo.folia.localhost"))
+        self.stdout.write(self.style.SUCCESS("  演示站点已创建：demo.brcnwiki.com"))

@@ -85,7 +85,7 @@ class PlatformUserBanView(APIView):
         PlatformBan.objects.get_or_create(user=user, defaults={"reason": reason, "banned_by": request.user})
         user.is_active = False
         user.save(update_fields=["is_active"])
-        return Response({"detail": "User banned."})
+        return Response({"detail": "用户已封禁。"})
 
 
 class PlatformUserUnbanView(APIView):
@@ -98,7 +98,7 @@ class PlatformUserUnbanView(APIView):
         PlatformBan.objects.filter(user=user).delete()
         user.is_active = True
         user.save(update_fields=["is_active"])
-        return Response({"detail": "User unbanned."})
+        return Response({"detail": "用户已解封。"})
 
 
 class PlatformStatsView(APIView):

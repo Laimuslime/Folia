@@ -119,25 +119,25 @@
 	{/if}
 </div>
 
-<!-- Rating Widget -->
+<!-- 评分组件 -->
 <div class="page-rate-widget-box">
 	<span class="rate-points">
-		rating:&nbsp;<span class="number">{page.rate >= 0 ? '+' : ''}{page.rate ?? 0}</span>
+		评分:&nbsp;<span class="number">{page.rate >= 0 ? '+' : ''}{page.rate ?? 0}</span>
 	</span>
 	<span class="rateup btn btn-default">
-		<a href="#" title="vote up" onclick={(e) => { e.preventDefault(); onVote(1); }}>+</a>
+		<a href="#" title="赞" onclick={(e) => { e.preventDefault(); onVote(1); }}>+</a>
 	</span>
 	<span class="ratedown btn btn-default">
-		<a href="#" title="vote down" onclick={(e) => { e.preventDefault(); onVote(-1); }}>-</a>
+		<a href="#" title="踩" onclick={(e) => { e.preventDefault(); onVote(-1); }}>-</a>
 	</span>
 	<span class="cancel btn btn-default">
-		<a href="#" title="cancel vote" onclick={(e) => { e.preventDefault(); onVote(0); }}>x</a>
+		<a href="#" title="取消投票" onclick={(e) => { e.preventDefault(); onVote(0); }}>x</a>
 	</span>
 </div>
 
 <!-- Page Content -->
 <div id="page-content" bind:this={contentEl}>
-	{@html page.compiled_html || '<p><em>Empty page.</em></p>'}
+	{@html page.compiled_html || '<p><em>空页面。</em></p>'}
 </div>
 
 <!-- Tags -->

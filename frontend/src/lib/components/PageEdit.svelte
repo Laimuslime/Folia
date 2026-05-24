@@ -53,15 +53,15 @@
 
 	<!-- Editor Toolbar -->
 	<div class="editor-toolbar" style="margin: 0.3em 0; padding: 0.3em; background: #f0f0f0; border: 1px solid #ccc; font-size: 0.85em;">
-		<button type="button" title="Bold" onclick={() => editSource += '**bold**'}>B</button>
-		<button type="button" title="Italic" onclick={() => editSource += '//italic//'}>I</button>
-		<button type="button" title="Underline" onclick={() => editSource += '__underline__'}>U</button>
-		<button type="button" title="Strikethrough" onclick={() => editSource += '--strike--'}>S</button>
+		<button type="button" title="粗体" onclick={() => editSource += '**bold**'}>B</button>
+		<button type="button" title="斜体" onclick={() => editSource += '//italic//'}>I</button>
+		<button type="button" title="下划线" onclick={() => editSource += '__underline__'}>U</button>
+		<button type="button" title="删除线" onclick={() => editSource += '--strike--'}>S</button>
 		|
-		<button type="button" title="Heading" onclick={() => editSource += '\n+ Heading\n'}>H</button>
-		<button type="button" title="Link" onclick={() => editSource += '[[[page-name | link text]]]'}>Link</button>
-		<button type="button" title="Image" onclick={() => editSource += '[[image filename]]'}>Img</button>
-		<button type="button" title="Code" onclick={() => editSource += '[[code]]\ncode here\n[[/code]]'}>Code</button>
+		<button type="button" title="标题" onclick={() => editSource += '\n+ Heading\n'}>H</button>
+		<button type="button" title="链接" onclick={() => editSource += '[[[page-name | link text]]]'}>链接</button>
+		<button type="button" title="图片" onclick={() => editSource += '[[image filename]]'}>图片</button>
+		<button type="button" title="代码" onclick={() => editSource += '[[code]]\ncode here\n[[/code]]'}>代码</button>
 	</div>
 
 	<div style="margin: 0.5em 0;">

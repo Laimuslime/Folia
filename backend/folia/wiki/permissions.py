@@ -1,17 +1,15 @@
 """
-Permission system matching Wikidot's category-level permission model.
+权限系统 — 基于分类的权限模型。
 
-Wikidot permissions are stored per-category with these actions:
+每个分类可设置以下操作的权限：
   edit, create, move, delete, attach, rename, options, rate
 
-Each action can be set to one of:
-  'a' = anyone (including anonymous)
-  'r' = registered users
-  'm' = members of the site
-  'o' = admins + moderators only
-  '' = inherit from site default
-
-Site-level defaults are typically 'm' (members only) for most actions.
+每个操作可设为：
+  'a' = 所有人（含匿名）
+  'r' = 注册用户
+  'm' = 站点成员
+  'o' = 管理员 + 版主
+  '' = 继承站点默认
 """
 from folia.sites.models import Site, Member, Admin, Moderator
 

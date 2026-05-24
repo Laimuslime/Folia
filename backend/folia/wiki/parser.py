@@ -1,10 +1,4 @@
-"""
-Wikidot markup parser for Folia.
-
-This is a Python implementation of the core Wikidot syntax.
-For production use, this should be replaced with FTML (Rust/WASM) bindings
-for full compatibility. This implementation covers the most common syntax elements.
-"""
+"""Wikidot 标记语言解析器。"""
 import re
 import html
 
@@ -15,7 +9,7 @@ def render_wikidot_markup(source: str, site=None, page=None, user=None) -> str:
 
 
 def extract_wiki_links(source: str) -> list[str]:
-    """Extract all wiki link targets from Wikidot markup source."""
+    """从 Wikidot 标记源码中提取所有 Wiki 链接目标。"""
     links = set()
     for match in re.finditer(r'\[\[\[([^\]|#]+)', source):
         target = match.group(1).strip().lower()
@@ -34,7 +28,7 @@ class WikidotParser:
         self.toc_entries = []
 
     def render(self, source: str) -> str:
-        # Process includes first
+        # 先处理 include
         source = self._process_includes(source)
 
         lines = source.split("\n")
@@ -44,43 +38,43 @@ class WikidotParser:
         while i < len(lines):
             line = lines[i]
 
-            # Code blocks
+            # 代码块
             if line.strip().startswith("[[code"):
                 block, i = self._parse_code_block(lines, i)
                 output.append(block)
                 continue
 
-            # Module blocks
+            # 模块块
             if line.strip().startswith("[[module"):
                 block, i = self._parse_module_block(lines, i)
                 output.append(block)
                 continue
 
-            # Collapsible blocks
+            # 折叠块
             if line.strip().startswith("[[collapsible"):
                 block, i = self._parse_collapsible(lines, i)
                 output.append(block)
                 continue
 
-            # Div blocks
+            # Div 块
             if line.strip().startswith("[[div"):
                 block, i = self._parse_div(lines, i)
                 output.append(block)
                 continue
 
-            # Tabview
+            # 标签视图
             if line.strip() == "[[tabview]]":
                 block, i = self._parse_tabview(lines, i)
                 output.append(block)
                 continue
 
-            # Horizontal rule
+            # 水平线
             if line.strip().startswith("----"):
                 output.append("<hr>")
                 i += 1
                 continue
 
-            # Headings
+            # 标题
             heading_match = re.match(r"^(\+{1,6})\s+(.+)$", line)
             if heading_match:
                 level = len(heading_match.group(1))
@@ -91,48 +85,48 @@ class WikidotParser:
                 i += 1
                 continue
 
-            # Blockquote
+            # 引用块
             if line.startswith(">"):
                 block, i = self._parse_blockquote(lines, i)
                 output.append(block)
                 continue
 
-            # Unordered list
+            # 无序列表
             if re.match(r"^\s*\*\s", line):
                 block, i = self._parse_list(lines, i, "ul")
                 output.append(block)
                 continue
 
-            # Ordered list
+            # 有序列表
             if re.match(r"^\s*#\s", line):
                 block, i = self._parse_list(lines, i, "ol")
                 output.append(block)
                 continue
 
-            # Table
+            # 表格
             if line.startswith("||"):
                 block, i = self._parse_table(lines, i)
                 output.append(block)
                 continue
 
-            # Empty line = paragraph break
+            # 空行 = 段落分隔
             if not line.strip():
                 output.append("")
                 i += 1
                 continue
 
-            # Normal paragraph
+            # 普通段落
             para, i = self._parse_paragraph(lines, i)
             output.append(f"<p>{para}</p>")
 
         result = "\n".join(output)
 
-        # Insert TOC if requested
+        # 插入目录
         if "[[toc]]" in source.lower():
             toc_html = self._build_toc()
             result = re.sub(r"\[\[toc\]\]", toc_html, result, flags=re.IGNORECASE)
 
-        # Insert footnotes
+        # 插入脚注
         if self.footnotes:
             result += self._build_footnotes()
 
@@ -165,42 +159,42 @@ class WikidotParser:
         return re.sub(r'\[\[include\s+([^\]|]+)((?:\|[^\]]*)?)\]\]', replace_include, source, flags=re.IGNORECASE)
 
     def _inline(self, text: str) -> str:
-        # Escape HTML first
+        # 转义 HTML
         text = html.escape(text, quote=False)
 
-        # Bold
+        # 粗体
         text = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", text)
-        # Italic
+        # 斜体
         text = re.sub(r"//(.+?)//", r"<em>\1</em>", text)
-        # Underline
+        # 下划线
         text = re.sub(r"__(.+?)__", r"<u>\1</u>", text)
-        # Strikethrough
+        # 删除线
         text = re.sub(r"--(.+?)--", r"<s>\1</s>", text)
-        # Superscript
+        # 上标
         text = re.sub(r"\^\^(.+?)\^\^", r"<sup>\1</sup>", text)
-        # Subscript
+        # 下标
         text = re.sub(r",,(.+?),,", r"<sub>\1</sub>", text)
-        # Monospace
+        # 等宽字体
         text = re.sub(r"\{\{(.+?)\}\}", r"<code>\1</code>", text)
 
-        # Links: [[[page-name]]] or [[[page-name | display text]]]
+        # Wiki 链接
         text = re.sub(r"\[\[\[([^\]|]+)\|([^\]]+)\]\]\]", self._wiki_link, text)
         text = re.sub(r"\[\[\[([^\]]+)\]\]\]", self._wiki_link_simple, text)
 
-        # External links: [url text]
+        # 外部链接
         text = re.sub(r"\[(https?://[^\s\]]+)\s+([^\]]+)\]", r'<a href="\1" class="external">\2</a>', text)
         text = re.sub(r"\[(https?://[^\s\]]+)\]", r'<a href="\1" class="external">\1</a>', text)
 
-        # Images
+        # 图片
         text = self._parse_images(text)
 
-        # Footnotes
+        # 脚注
         text = re.sub(r"\[\[footnote\]\](.+?)\[\[/footnote\]\]", self._add_footnote, text)
 
-        # Span with CSS
+        # Span 样式
         text = re.sub(r'\[\[span\s+([^\]]*)\]\](.+?)\[\[/span\]\]', self._parse_span, text)
 
-        # Line break
+        # 换行
         text = text.replace("_\n", "<br>")
 
         return text
@@ -299,7 +293,7 @@ class WikidotParser:
         module_name = module_match.group(1) if module_match else "Unknown"
         module_attrs_str = module_match.group(2).strip() if module_match else ""
 
-        # Parse module params
+        # 解析模块参数
         params = {}
         for m in re.finditer(r'(\w+)\s*=\s*"([^"]*)"', module_attrs_str):
             params[m.group(1)] = m.group(2)
@@ -311,11 +305,11 @@ class WikidotParser:
             i += 1
         i += 1
 
-        # Store body content as _body param
+        # 存储正文内容
         if content_lines:
             params["_body"] = "\n".join(content_lines)
 
-        # Try to render via module system
+        # 通过模块系统渲染
         from folia.wiki.modules import ModuleRegistry
         context = {"site": self.site, "page": self.page, "user": self.user}
         return ModuleRegistry.render(module_name, params, context), i

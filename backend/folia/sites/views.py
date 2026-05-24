@@ -49,7 +49,7 @@ class SiteViewSet(viewsets.ModelViewSet):
             return Response({"detail": "每个用户最多创建 5 个站点。"}, status=status.HTTP_400_BAD_REQUEST)
 
         if Site.objects.filter(slug=data["slug"]).exists():
-            return Response({"detail": "Site slug already taken."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "该站点地址已被使用。"}, status=status.HTTP_400_BAD_REQUEST)
 
         site = Site.objects.create(
             unix_name=data["slug"],
@@ -61,38 +61,38 @@ class SiteViewSet(viewsets.ModelViewSet):
             private=data.get("private", False),
         )
 
-        # Create settings
+        # 创建设置
         SiteSettings.objects.create(site=site)
 
-        # Make creator admin + member
+        # 创建者设为管理员 + 成员
         Admin.objects.create(site=site, user=request.user, founder=True)
         Member.objects.create(site=site, user=request.user)
 
-        # Create default pages
+        # 创建默认页面
         from folia.wiki.models import Page, PageSource, PageCompiled, Category
         default_cat, _ = Category.objects.get_or_create(site=site, name="_default")
         nav_cat, _ = Category.objects.get_or_create(site=site, name="nav")
 
-        # Start page
+        # 首页
         start_page = Page.objects.create(
             site=site, category=default_cat, unix_name="start",
-            title="Welcome", owner_user=request.user, last_edit_user=request.user,
+            title="欢迎", owner_user=request.user, last_edit_user=request.user,
         )
         start_source = PageSource.objects.create(
             page=start_page,
-            text=f"+ Welcome to {data['name']}\n\nThis is your new wiki. Click **Edit** below to start writing.",
+            text=f"+ 欢迎来到 {data['name']}\n\n这是你的新 Wiki。点击下方的 **编辑** 开始撰写内容。",
         )
         from folia.wiki.parser import render_wikidot_markup
         PageCompiled.objects.create(page=start_page, text=render_wikidot_markup(start_source.text, site))
 
-        # Nav sidebar
+        # 导航侧栏
         nav_page = Page.objects.create(
             site=site, category=nav_cat, unix_name="side",
-            title="Side Navigation", owner_user=request.user, last_edit_user=request.user,
+            title="侧边导航", owner_user=request.user, last_edit_user=request.user,
         )
         nav_source = PageSource.objects.create(
             page=nav_page,
-            text="* [/ Home]\n* [/system:list-all-pages All Pages]\n* [/system:recent-changes Recent Changes]\n* [/forum:start Forum]",
+            text="* [/ 首页]\n* [/system:list-all-pages 所有页面]\n* [/system:recent-changes 最近更改]\n* [/forum:start 论坛]",
         )
         PageCompiled.objects.create(page=nav_page, text=render_wikidot_markup(nav_source.text, site))
 
@@ -131,7 +131,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         user = request.user
 
         if Member.objects.filter(site=site, user=user).exists():
-            return Response({"detail": "Already a member."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "你已经是成员了。"}, status=status.HTTP_400_BAD_REQUEST)
 
         if site.private:
             settings_obj = getattr(site, "settings_obj", None)
@@ -140,11 +140,11 @@ class SiteViewSet(viewsets.ModelViewSet):
                     site=site, user=user,
                     defaults={"text": request.data.get("message", "")},
                 )
-                return Response({"detail": "Application submitted."}, status=status.HTTP_202_ACCEPTED)
-            return Response({"detail": "This site does not accept new members."}, status=status.HTTP_403_FORBIDDEN)
+                return Response({"detail": "申请已提交。"}, status=status.HTTP_202_ACCEPTED)
+            return Response({"detail": "该站点不接受新成员。"}, status=status.HTTP_403_FORBIDDEN)
 
         Member.objects.create(site=site, user=user)
-        return Response({"detail": "Joined."}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "已加入。"}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["post"])
     def leave(self, request, slug=None):
@@ -160,7 +160,7 @@ class SiteViewSet(viewsets.ModelViewSet):
             apps = site.applications.filter(status="pending").select_related("user")
             return Response(MemberApplicationSerializer(apps, many=True).data)
 
-        # Accept or decline
+        # 通过或拒绝
         app_id = request.data.get("application_id")
         decision = request.data.get("decision")
         application = get_object_or_404(MemberApplication, id=app_id, site=site)
@@ -174,7 +174,7 @@ class SiteViewSet(viewsets.ModelViewSet):
             application.reply = request.data.get("reply", "")
             application.save()
 
-        return Response({"detail": f"Application {decision}d."})
+        return Response({"detail": f"申请已{decision}。"})
 
     @action(detail=True, methods=["post"], url_path="members/(?P<user_id>[^/.]+)/remove")
     def remove_member(self, request, slug=None, user_id=None):
@@ -184,7 +184,7 @@ class SiteViewSet(viewsets.ModelViewSet):
         Member.objects.filter(site=site, user_id=user_id).delete()
         Moderator.objects.filter(site=site, user_id=user_id).delete()
         Admin.objects.filter(site=site, user_id=user_id, founder=False).delete()
-        return Response({"detail": "Member removed."})
+        return Response({"detail": "成员已移除。"})
 
     @action(detail=True, methods=["post"], url_path="members/(?P<user_id>[^/.]+)/promote")
     def promote_member(self, request, slug=None, user_id=None):
@@ -196,7 +196,7 @@ class SiteViewSet(viewsets.ModelViewSet):
             Admin.objects.get_or_create(site=site, user_id=user_id)
         else:
             Moderator.objects.get_or_create(site=site, user_id=user_id)
-        return Response({"detail": f"Promoted to {role}."})
+        return Response({"detail": f"已升级为{role}。"})
 
     @action(detail=True, methods=["post"], url_path="members/(?P<user_id>[^/.]+)/demote")
     def demote_member(self, request, slug=None, user_id=None):
@@ -205,7 +205,7 @@ class SiteViewSet(viewsets.ModelViewSet):
             return Response(status=status.HTTP_403_FORBIDDEN)
         Admin.objects.filter(site=site, user_id=user_id, founder=False).delete()
         Moderator.objects.filter(site=site, user_id=user_id).delete()
-        return Response({"detail": "Demoted to member."})
+        return Response({"detail": "已降级为普通成员。"})
 
     @action(detail=True, methods=["get", "post"])
     def invitations(self, request, slug=None):
@@ -224,9 +224,9 @@ class SiteViewSet(viewsets.ModelViewSet):
         try:
             target_user = User.objects.get(username=username)
         except User.DoesNotExist:
-            return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "用户不存在。"}, status=status.HTTP_404_NOT_FOUND)
         MemberInvitation.objects.create(site=site, user=target_user, by_user=request.user, body=message)
-        return Response({"detail": "Invitation sent."}, status=status.HTTP_201_CREATED)
+        return Response({"detail": "邀请已发送。"}, status=status.HTTP_201_CREATED)
 
     @action(detail=True, methods=["get", "post", "delete"])
     def blocks(self, request, slug=None):
@@ -243,11 +243,11 @@ class SiteViewSet(viewsets.ModelViewSet):
             user_id = request.data.get("user_id")
             reason = request.data.get("reason", "")
             UserBlock.objects.get_or_create(site=site, user_id=user_id, defaults={"reason": reason})
-            return Response({"detail": "User blocked."}, status=status.HTTP_201_CREATED)
+            return Response({"detail": "用户已封禁。"}, status=status.HTTP_201_CREATED)
 
         block_id = request.data.get("block_id")
         UserBlock.objects.filter(id=block_id, site=site).delete()
-        return Response({"detail": "Block removed."})
+        return Response({"detail": "已解除封禁。"})
 
     @action(detail=True, methods=["get"])
     def themes(self, request, slug=None):
@@ -284,4 +284,4 @@ class SiteViewSet(viewsets.ModelViewSet):
         cat = get_object_or_404(Category, id=cat_id, site=site)
         cat.permissions = ";".join(f"{k}:{v}" for k, v in perms.items() if v)
         cat.save(update_fields=["permissions"])
-        return Response({"detail": "Permissions updated."})
+        return Response({"detail": "权限已更新。"})

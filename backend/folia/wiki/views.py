@@ -40,7 +40,7 @@ class PageViewSet(viewsets.ViewSet):
     def list(self, request):
         site = self._get_site(request)
         if not site:
-            return Response({"detail": "Site required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "需要站点上下文。"}, status=status.HTTP_400_BAD_REQUEST)
 
         pages = Page.objects.filter(site=site).select_related("category", "owner_user").prefetch_related("tags")
 
@@ -64,7 +64,7 @@ class PageViewSet(viewsets.ViewSet):
     def retrieve(self, request, pk=None):
         site = self._get_site(request)
         if not site:
-            return Response({"detail": "Site required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "需要站点上下文。"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             page = Page.objects.get(site=site, unix_name=pk)
@@ -72,10 +72,10 @@ class PageViewSet(viewsets.ViewSet):
             redirect = PageRedirect.objects.filter(site=site, from_unix_name=pk).first()
             if redirect:
                 return Response({"redirect": redirect.to_unix_name}, status=status.HTTP_301_MOVED_PERMANENTLY)
-            return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "未找到。"}, status=status.HTTP_404_NOT_FOUND)
 
         if not can_view_page(request.user, site, page):
-            return Response({"detail": "You don't have permission to view this page."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限查看此页面。"}, status=status.HTTP_403_FORBIDDEN)
         serializer = PageDetailSerializer(page)
         return Response(serializer.data)
 
@@ -83,26 +83,26 @@ class PageViewSet(viewsets.ViewSet):
     def create(self, request):
         site = self._get_site(request)
         if not site:
-            return Response({"detail": "Site required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "需要站点上下文。"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = PageCreateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Get or create category
+        # 获取或创建分类
         cat_name = data.get("category", "_default")
         category, _ = Category.objects.get_or_create(site=site, name=cat_name)
 
         if not can_create_page(request.user, site, category):
-            return Response({"detail": "You don't have permission to create pages in this category."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限在此分类创建页面。"}, status=status.HTTP_403_FORBIDDEN)
 
-        # Create page source
+        # 创建页面源码
         source_obj = PageSource.objects.create(text=data["source"])
 
-        # Compile
+        # 编译
         compiled_html = render_wikidot_markup(data["source"], site)
 
-        # Create page
+        # 创建页面
         page = Page.objects.create(
             site=site,
             category=category,
@@ -113,10 +113,10 @@ class PageViewSet(viewsets.ViewSet):
             revision_number=0,
         )
 
-        # Create compiled
+        # 创建编译结果
         PageCompiled.objects.create(page=page, text=compiled_html)
 
-        # Create revision
+        # 创建修订记录
         PageRevision.objects.create(
             page=page,
             source=source_obj,
@@ -128,14 +128,14 @@ class PageViewSet(viewsets.ViewSet):
             site=site,
         )
 
-        # Tags
+        # 标签
         for tag_name in data.get("tags", []):
             PageTag.objects.create(site=site, page=page, tag=tag_name.strip().lower())
 
-        # Log
+        # 日志
         LogEvent.objects.create(
             site=site, user=request.user, page=page,
-            type="new_page", text=f"New page: {page.unix_name}",
+            type="new_page", text=f"新建页面：{page.unix_name}",
         )
 
         index_page(page)
@@ -145,12 +145,12 @@ class PageViewSet(viewsets.ViewSet):
     def update(self, request, pk=None):
         site = self._get_site(request)
         if not site:
-            return Response({"detail": "Site required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "需要站点上下文。"}, status=status.HTTP_400_BAD_REQUEST)
 
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not can_edit_page(request.user, site, page):
-            return Response({"detail": "You don't have permission to edit this page."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限编辑此页面。"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PageEditSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -160,18 +160,18 @@ class PageViewSet(viewsets.ViewSet):
         new_source = data.get("source", current_source)
         new_title = data.get("title", page.title)
 
-        # Create new source
+        # 创建新源码
         source_obj = PageSource.objects.create(page=page, text=new_source)
 
-        # Compile
+        # 编译
         compiled_html = render_wikidot_markup(new_source, site)
         PageCompiled.objects.update_or_create(page=page, defaults={"text": compiled_html})
 
-        # Determine flags
+        # 判断修改标记
         flag_text = new_source != current_source
         flag_title = new_title != page.title
 
-        # Create revision
+        # 创建修订记录
         page.revision_number += 1
         PageRevision.objects.create(
             page=page,
@@ -190,23 +190,23 @@ class PageViewSet(viewsets.ViewSet):
         page.date_last_edited = timezone.now()
         page.save()
 
-        # Update tags
+        # 更新标签
         if "tags" in data:
             page.tags.all().delete()
             for tag_name in data["tags"]:
                 PageTag.objects.create(site=site, page=page, tag=tag_name.strip().lower())
 
-        # Log
+        # 日志
         LogEvent.objects.create(
             site=site, user=request.user, page=page,
-            type="edit_page", text=f"Edited: {page.unix_name}",
+            type="edit_page", text=f"编辑：{page.unix_name}",
         )
 
-        # Update page links
+        # 更新页面链接
         self._update_page_links(page, new_source, site)
 
-        # Notify watchers
-        self._notify_watchers(page, request.user, "page_edit", f"edited {page.title}")
+        # 通知监视者
+        self._notify_watchers(page, request.user, "page_edit", f"编辑了 {page.title}")
 
         index_page(page)
         return Response(PageDetailSerializer(page).data)
@@ -214,16 +214,16 @@ class PageViewSet(viewsets.ViewSet):
     def destroy(self, request, pk=None):
         site = self._get_site(request)
         if not site:
-            return Response({"detail": "Site required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "需要站点上下文。"}, status=status.HTTP_400_BAD_REQUEST)
 
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not can_delete_page(request.user, site, page):
-            return Response({"detail": "You don't have permission to delete this page."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限删除此页面。"}, status=status.HTTP_403_FORBIDDEN)
 
         LogEvent.objects.create(
             site=site, user=request.user,
-            type="delete_page", text=f"Deleted: {page.unix_name}",
+            type="delete_page", text=f"删除：{page.unix_name}",
         )
 
         page.delete()
@@ -252,7 +252,7 @@ class PageViewSet(viewsets.ViewSet):
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not can_rate_page(request.user, site, page):
-            return Response({"detail": "You don't have permission to rate this page."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限评分此页面。"}, status=status.HTTP_403_FORBIDDEN)
 
         if request.method == "DELETE":
             PageRateVote.objects.filter(page=page, user=request.user).delete()
@@ -283,15 +283,15 @@ class PageViewSet(viewsets.ViewSet):
 
         uploaded = request.FILES.get("file")
         if not uploaded:
-            return Response({"detail": "No file."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "未上传文件。"}, status=status.HTTP_400_BAD_REQUEST)
 
         if not can_attach_file(request.user, site, page):
-            return Response({"detail": "You don't have permission to attach files."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "你没有权限上传附件。"}, status=status.HTTP_403_FORBIDDEN)
 
         import os
         safe_name = os.path.basename(uploaded.name).strip()
         if not safe_name:
-            return Response({"detail": "Invalid filename."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "文件名无效。"}, status=status.HTTP_400_BAD_REQUEST)
 
         from django.core.files.storage import default_storage
         path = f"sites/{site.slug}/{page.unix_name}/{safe_name}"
@@ -315,14 +315,14 @@ class PageViewSet(viewsets.ViewSet):
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not can_rename_page(request.user, site, page):
-            return Response({"detail": "No permission to rename."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "没有权限重命名。"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PageRenameSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         new_slug = serializer.validated_data["new_slug"].strip().lower()
 
         if Page.objects.filter(site=site, unix_name=new_slug).exists():
-            return Response({"detail": "A page with that slug already exists."}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": "该地址已被其他页面使用。"}, status=status.HTTP_409_CONFLICT)
 
         old_slug = page.unix_name
         page.unix_name = new_slug
@@ -334,7 +334,7 @@ class PageViewSet(viewsets.ViewSet):
         PageRevision.objects.create(
             page=page, revision_number=page.revision_number,
             user=request.user, user_string=request.user.username,
-            flag_rename=True, comments=f"Renamed from {old_slug}",
+            flag_rename=True, comments=f"从 {old_slug} 重命名",
             site=site,
         )
 
@@ -347,7 +347,7 @@ class PageViewSet(viewsets.ViewSet):
 
         LogEvent.objects.create(
             site=site, user=request.user, page=page,
-            type="rename_page", text=f"Renamed: {old_slug} -> {new_slug}",
+            type="rename_page", text=f"重命名：{old_slug} -> {new_slug}",
         )
 
         index_page(page)
@@ -361,7 +361,7 @@ class PageViewSet(viewsets.ViewSet):
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not check_permission(request.user, site, page.category, "move"):
-            return Response({"detail": "No permission to move."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "没有权限移动。"}, status=status.HTTP_403_FORBIDDEN)
 
         serializer = PageMoveSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -377,13 +377,13 @@ class PageViewSet(viewsets.ViewSet):
         PageRevision.objects.create(
             page=page, revision_number=page.revision_number,
             user=request.user, user_string=request.user.username,
-            flag_meta=True, comments=f"Moved from {old_cat} to {new_cat_name}",
+            flag_meta=True, comments=f"从 {old_cat} 移动到 {new_cat_name}",
             site=site,
         )
 
         LogEvent.objects.create(
             site=site, user=request.user, page=page,
-            type="move_page", text=f"Moved: {old_cat} -> {new_cat_name}",
+            type="move_page", text=f"移动：{old_cat} -> {new_cat_name}",
         )
 
         return Response(PageDetailSerializer(page).data)
@@ -396,7 +396,7 @@ class PageViewSet(viewsets.ViewSet):
 
         role = get_user_role(request.user, site)
         if role not in ("moderator", "admin"):
-            return Response({"detail": "Only moderators/admins can lock pages."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "只有版主/管理员可以锁定页面。"}, status=status.HTTP_403_FORBIDDEN)
 
         if request.method == "POST":
             page.blocked = True
@@ -447,7 +447,7 @@ class PageViewSet(viewsets.ViewSet):
         page = get_object_or_404(Page, site=site, unix_name=pk)
 
         if not can_edit_page(request.user, site, page):
-            return Response({"detail": "No permission."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"detail": "没有权限。"}, status=status.HTTP_403_FORBIDDEN)
 
         if request.method == "DELETE":
             page.parent_page = None
@@ -463,7 +463,7 @@ class PageViewSet(viewsets.ViewSet):
         else:
             parent = get_object_or_404(Page, site=site, unix_name=parent_slug)
             if parent.pk == page.pk:
-                return Response({"detail": "A page cannot be its own parent."}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"detail": "页面不能设为自身的父页面。"}, status=status.HTTP_400_BAD_REQUEST)
             page.parent_page = parent
 
         page.save(update_fields=["parent_page"])
@@ -497,7 +497,7 @@ class PageViewSet(viewsets.ViewSet):
 
         existing = PageEditLock.objects.filter(page=page).exclude(user=request.user).first()
         if existing:
-            return Response({"detail": f"Page is being edited by {existing.user_string}."}, status=status.HTTP_409_CONFLICT)
+            return Response({"detail": f"页面正在被 {existing.user_string} 编辑。"}, status=status.HTTP_409_CONFLICT)
 
         lock, _ = PageEditLock.objects.update_or_create(
             page=page, user=request.user,

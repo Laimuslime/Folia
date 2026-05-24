@@ -17,7 +17,7 @@ class SiteMiddleware:
                 request.current_site = site
                 if site.suspended and not (request.user and request.user.is_superuser):
                     from django.http import JsonResponse
-                    return JsonResponse({"detail": "This site has been suspended."}, status=403)
+                    return JsonResponse({"detail": "该站点已被暂停。"}, status=403)
             except Site.DoesNotExist:
                 pass
 

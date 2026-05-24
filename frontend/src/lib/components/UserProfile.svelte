@@ -191,9 +191,9 @@
 								<dd>{formatDate(profile.created_at || profile.date_joined)}</dd>
 
 								<dt>账户类型</dt>
-								<dd>free</dd>
+								<dd>免费用户</dd>
 
-								<dt>Karma</dt>
+								<dt>声望</dt>
 								<dd class="karma-cell">
 									<span class="karma-level">{getKarmaLevel(profile.karma ?? 0)}</span>
 									<span class="karma-dots">

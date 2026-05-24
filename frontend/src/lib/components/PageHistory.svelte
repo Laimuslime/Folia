@@ -113,11 +113,11 @@
 					<td><input type="checkbox" checked={selectedRevs.includes(rev.revision_number)} onchange={() => toggleRev(rev.revision_number)}></td>
 					<td>{rev.revision_number}</td>
 					<td>
-						{#if rev.flag_new}<span title="New page">N</span>{/if}
-						{#if rev.flag_text}<span title="Source changed">S</span>{/if}
-						{#if rev.flag_title}<span title="Title changed">T</span>{/if}
-						{#if rev.flag_rename}<span title="Renamed">R</span>{/if}
-						{#if rev.flag_file}<span title="File changed">F</span>{/if}
+						{#if rev.flag_new}<span title="新建页面">N</span>{/if}
+						{#if rev.flag_text}<span title="内容修改">S</span>{/if}
+						{#if rev.flag_title}<span title="标题修改">T</span>{/if}
+						{#if rev.flag_rename}<span title="重命名">R</span>{/if}
+						{#if rev.flag_file}<span title="文件修改">F</span>{/if}
 					</td>
 					<td>{rev.user_string || rev.username || 'system'}</td>
 					<td>{rev.date_last_edited ? new Date(rev.date_last_edited).toLocaleString() : ''}</td>

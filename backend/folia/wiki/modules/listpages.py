@@ -50,7 +50,7 @@ class ListPagesModule(BaseModule):
 
         pages = Page.objects.filter(site=site).select_related("category", "owner_user").prefetch_related("tags")
 
-        # Category filter
+        # 分类过滤
         category_param = self.get_param("category", ".")
         if category_param == "*":
             pass  # all categories
@@ -62,7 +62,7 @@ class ListPagesModule(BaseModule):
             if cats:
                 pages = pages.filter(category__name__in=cats)
 
-        # Tags filter
+        # 标签过滤
         tags_param = self.get_param("tags")
         if tags_param:
             tags_list = [t.strip() for t in re.split(r'[,;\s]+', tags_param) if t.strip()]
@@ -78,7 +78,7 @@ class ListPagesModule(BaseModule):
             if exclude_tags:
                 pages = pages.exclude(tags__tag__in=exclude_tags)
 
-        # Parent filter
+        # 父页面过滤
         parent_param = self.get_param("parent")
         if parent_param == "-":
             pages = pages.filter(parent_page__isnull=True)
@@ -88,12 +88,12 @@ class ListPagesModule(BaseModule):
         elif parent_param:
             pages = pages.filter(parent_page__unix_name=parent_param)
 
-        # Skip current page
+        # 跳过当前页面
         if self.get_param("skipCurrent", "no") in ("yes", "true"):
             if self.page:
                 pages = pages.exclude(pk=self.page.pk)
 
-        # Name filter
+        # 名称过滤
         name_param = self.get_param("name")
         if name_param:
             if "%" in name_param:
@@ -102,7 +102,7 @@ class ListPagesModule(BaseModule):
             else:
                 pages = pages.filter(unix_name=name_param)
 
-        # Rating filter
+        # 评分过滤
         rating_param = self.get_param("rating")
         if rating_param:
             if rating_param.startswith(">"):
@@ -112,7 +112,7 @@ class ListPagesModule(BaseModule):
             elif rating_param.startswith("="):
                 pages = pages.filter(rate=int(rating_param[1:]))
 
-        # Created date filter
+        # 创建日期过滤
         created_at = self.get_param("created_at")
         if created_at:
             if created_at.startswith("last"):
@@ -131,7 +131,7 @@ class ListPagesModule(BaseModule):
                     from django.utils import timezone
                     pages = pages.filter(date_created__gte=timezone.now() - delta)
 
-        # Order
+        # 排序
         order_param = self.get_param("order", "created_at desc")
         order_parts = order_param.split()
         order_field = self.VALID_ORDERS.get(order_parts[0], "date_created")
@@ -139,12 +139,12 @@ class ListPagesModule(BaseModule):
             order_field = f"-{order_field}"
         pages = pages.order_by(order_field)
 
-        # Limit
+        # 限制数量
         limit = int(self.get_param("limit", "20"))
         per_page = int(self.get_param("perPage", "0"))
 
         if per_page > 0:
-            # Pagination
+            # 分页
             current_page_num = int(self.context.get("p", 1))
             total = pages.count()
             total_pages = (total + per_page - 1) // per_page
@@ -153,10 +153,10 @@ class ListPagesModule(BaseModule):
         else:
             pages = pages[:limit]
 
-        # Get body template
+        # 获取正文模板
         body = self.get_param("_body", "%%title_linked%%\n")
 
-        # Separate header/footer
+        # 分离头部/尾部
         header = ""
         footer = ""
         if "%%content%%\n" in body:
@@ -164,7 +164,7 @@ class ListPagesModule(BaseModule):
             header = parts[0] if len(parts) > 1 else ""
             body = parts[1] if len(parts) > 1 else body
 
-        # Render each page
+        # 渲染每个页面
         items = []
         for page in pages:
             item_html = self._render_item(body, page)
@@ -176,7 +176,7 @@ class ListPagesModule(BaseModule):
                 return f'<p>{empty_msg}</p>'
             return '<p class="list-pages-empty">No pages match.</p>'
 
-        # Wrap
+        # 包装输出
         wrapper = self.get_param("wrapper", "yes")
         separator = self.get_param("separate", "yes")
 
@@ -203,7 +203,7 @@ class ListPagesModule(BaseModule):
                 except Exception:
                     result = result.replace(var, "")
 
-        # Handle %%content{n}%% — first n paragraphs
+        # 处理 %%content{n}%% — 前 n 段
         content_n = re.findall(r'%%content\{(\d+)\}%%', result)
         for n in content_n:
             html = page.compiled_html

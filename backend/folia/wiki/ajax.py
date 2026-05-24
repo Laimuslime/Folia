@@ -1,9 +1,4 @@
-"""
-AJAX Module Connector — equivalent to Wikidot's ajax-module-connector.php.
-
-Handles dynamic module loading from the frontend. Wikidot's frontend uses this
-endpoint to load modules like Rate, ListPages (pagination), Edit, History, etc.
-"""
+"""AJAX 模块连接器 — 处理前端动态模块加载。"""
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -30,13 +25,13 @@ class AjaxModuleConnectorView(APIView):
                 site = Site.objects.filter(slug=site_slug).first()
 
         if not site:
-            return Response({"status": "error", "message": "No site context"}, status=400)
+            return Response({"status": "error", "message": "缺少站点上下文"}, status=400)
 
         handler = self._get_handler(module_name)
         if handler:
             return handler(request, site)
 
-        # Generic module rendering
+        # 通用模块渲染
         params = {k: v for k, v in request.data.items() if k not in ("moduleName", "callType", "site")}
         context = {"site": site, "page": None, "user": request.user if request.user.is_authenticated else None}
 
@@ -120,7 +115,7 @@ class AjaxModuleConnectorView(APIView):
 
         html = (
             f'<table class="page-history">'
-            f'<tr><th>Rev.</th><th>User</th><th>Date</th><th>Comment</th><th>Flags</th></tr>'
+            f'<tr><th>版本</th><th>用户</th><th>日期</th><th>备注</th><th>标记</th></tr>'
             f'{"".join(rows)}'
             f'</table>'
         )
@@ -211,7 +206,7 @@ class AjaxModuleConnectorView(APIView):
             if group.description:
                 html_parts.append(f'<div class="description">{group.description}</div>')
             html_parts.append('<table class="forum-cat-list">')
-            html_parts.append('<tr><th>Category</th><th>Threads</th><th>Posts</th></tr>')
+            html_parts.append('<tr><th>分类</th><th>主题</th><th>帖子</th></tr>')
             for cat in group.categories.all():
                 html_parts.append(
                     f'<tr><td><a href="/forum/c-{cat.pk}/{cat.name}">{cat.name}</a>'
@@ -230,7 +225,7 @@ class AjaxModuleConnectorView(APIView):
 
         rows = []
         for t in threads[:50]:
-            sticky = '<span class="sticky">Sticky: </span>' if t.sticky else ""
+            sticky = '<span class="sticky">置顶：</span>' if t.sticky else ""
             rows.append(
                 f'<tr><td>{sticky}<a href="/forum/t-{t.pk}/{t.title}">{t.title}</a></td>'
                 f'<td>{t.user_string or ""}</td>'
@@ -242,7 +237,7 @@ class AjaxModuleConnectorView(APIView):
             f'<div class="forum-category-header"><h1>{cat.name}</h1>'
             f'<p>{cat.description or ""}</p></div>'
             f'<table class="forum-thread-list">'
-            f'<tr><th>Thread</th><th>Started by</th><th>Posts</th><th>Date</th></tr>'
+            f'<tr><th>主题</th><th>发起人</th><th>帖子</th><th>日期</th></tr>'
             f'{"".join(rows)}</table>'
         )
         return Response({"status": "ok", "body": html})
@@ -258,10 +253,10 @@ class AjaxModuleConnectorView(APIView):
             rendered = render_wikidot_markup(p.text, site) if p.text else ""
             post_html.append(
                 f'<div class="post" id="post-{p.pk}">'
-                f'<div class="head"><span class="info">{p.user_string or "Anonymous"}</span>'
+                f'<div class="head"><span class="info">{p.user_string or "匿名"}</span>'
                 f'<span class="date">{p.date_posted.strftime("%d %b %Y %H:%M") if p.date_posted else ""}</span></div>'
                 f'<div class="content">{rendered}</div>'
-                f'<div class="options"><a href="#" class="reply-btn" data-post-id="{p.pk}">Reply</a></div>'
+                f'<div class="options"><a href="#" class="reply-btn" data-post-id="{p.pk}">回复</a></div>'
                 f'</div>'
             )
 
@@ -277,10 +272,10 @@ class AjaxModuleConnectorView(APIView):
         html = (
             '<div class="forum-new-thread">'
             '<form id="new-thread-form">'
-            '<div><label>Title:</label><input type="text" name="title" class="text"></div>'
-            '<div><label>Description:</label><input type="text" name="description" class="text"></div>'
-            '<div><label>Content:</label><textarea name="source" rows="10"></textarea></div>'
-            '<div class="buttons"><input type="submit" value="Post Thread" class="btn btn-primary"></div>'
+            '<div><label>标题：</label><input type="text" name="title" class="text"></div>'
+            '<div><label>描述：</label><input type="text" name="description" class="text"></div>'
+            '<div><label>内容：</label><textarea name="source" rows="10"></textarea></div>'
+            '<div class="buttons"><input type="submit" value="发表主题" class="btn btn-primary"></div>'
             '</form></div>'
         )
         return Response({"status": "ok", "body": html})
@@ -289,9 +284,9 @@ class AjaxModuleConnectorView(APIView):
         html = (
             '<div class="forum-new-post">'
             '<form id="new-post-form">'
-            '<div><label>Title:</label><input type="text" name="title" class="text"></div>'
+            '<div><label>标题：</label><input type="text" name="title" class="text"></div>'
             '<div><textarea name="source" rows="6"></textarea></div>'
-            '<div class="buttons"><input type="submit" value="Post Reply" class="btn btn-primary"></div>'
+            '<div class="buttons"><input type="submit" value="发表回复" class="btn btn-primary"></div>'
             '</form></div>'
         )
         return Response({"status": "ok", "body": html})

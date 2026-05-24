@@ -80,10 +80,10 @@
 </script>
 
 <div id="page-title">
-	{#if view === 'groups'}Forum{/if}
-	{#if view === 'category'}{currentCategory?.name || 'Category'}{/if}
-	{#if view === 'thread'}{currentThread?.title || 'Thread'}{/if}
-	{#if view === 'new-thread'}New Thread{/if}
+	{#if view === 'groups'}论坛{/if}
+	{#if view === 'category'}{currentCategory?.name || '分类'}{/if}
+	{#if view === 'thread'}{currentThread?.title || '主题'}{/if}
+	{#if view === 'new-thread'}发表新主题{/if}
 </div>
 
 <!-- Breadcrumb -->

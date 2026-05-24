@@ -1,7 +1,4 @@
-"""
-System pages — dynamically generated pages like Wikidot's system: category.
-These handle list-all-pages, recent-changes, members, page-tags, etc.
-"""
+"""系统页面 — 动态生成的页面，如 system: 分类下的列表页面。"""
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
@@ -19,13 +16,13 @@ class SystemPageView(APIView):
     def get(self, request, page_name):
         site = getattr(request, "current_site", None)
         if not site:
-            return Response({"detail": "Site required."}, status=400)
+            return Response({"detail": "需要站点上下文。"}, status=400)
 
         handler = self._get_handler(page_name)
         if handler:
             return handler(request, site)
 
-        return Response({"detail": f"System page '{page_name}' not found."}, status=404)
+        return Response({"detail": f"系统页面 '{page_name}' 不存在。"}, status=404)
 
     def _get_handler(self, page_name):
         handlers = {
@@ -49,7 +46,7 @@ class SystemPageView(APIView):
                 "date_last_edited": p.date_last_edited,
             })
         return Response({
-            "title": "List All Pages",
+            "title": "所有页面",
             "type": "system",
             "items": items,
             "compiled_html": self._render_page_list(items),
@@ -81,12 +78,12 @@ class SystemPageView(APIView):
 
         html = (
             '<table class="wiki-content-table">'
-            '<tr><th>Date</th><th>Type</th><th>Page</th><th>User</th><th>Details</th></tr>'
+            '<tr><th>日期</th><th>类型</th><th>页面</th><th>用户</th><th>详情</th></tr>'
             f'{"".join(html_rows)}</table>'
         )
 
         return Response({
-            "title": "Recent Changes",
+            "title": "最近更改",
             "type": "system",
             "items": items,
             "compiled_html": html,
@@ -110,12 +107,12 @@ class SystemPageView(APIView):
 
         html = (
             '<table class="wiki-content-table">'
-            '<tr><th>User</th><th>Joined</th></tr>'
+            '<tr><th>用户</th><th>加入时间</th></tr>'
             f'{"".join(html_rows)}</table>'
         )
 
         return Response({
-            "title": "Members",
+            "title": "成员",
             "type": "system",
             "items": items,
             "compiled_html": html,
@@ -126,7 +123,7 @@ class SystemPageView(APIView):
         if tag:
             pages = Page.objects.filter(site=site, tags__tag=tag).order_by("unix_name")
             items = [{"unix_name": p.unix_name, "title": p.title} for p in pages]
-            html = f'<h2>Pages tagged "{tag}"</h2>' + self._render_page_list(
+            html = f'<h2>标签为 "{tag}" 的页面</h2>' + self._render_page_list(
                 [{"unix_name": p.unix_name, "title": p.title} for p in pages]
             )
         else:
@@ -140,7 +137,7 @@ class SystemPageView(APIView):
             html = "".join(html_parts)
 
         return Response({
-            "title": "Page Tags",
+            "title": "页面标签",
             "type": "system",
             "items": items,
             "compiled_html": html,
@@ -150,10 +147,10 @@ class SystemPageView(APIView):
         query = request.query_params.get("q", "")
         if not query:
             return Response({
-                "title": "Search",
+                "title": "搜索",
                 "type": "system",
                 "items": [],
-                "compiled_html": "<p>Enter a search query.</p>",
+                "compiled_html": "<p>请输入搜索关键词。</p>",
             })
 
         pages = Page.objects.filter(
@@ -161,10 +158,10 @@ class SystemPageView(APIView):
         ).order_by("-date_last_edited")[:50]
 
         items = [{"unix_name": p.unix_name, "title": p.title} for p in pages]
-        html = f'<h2>Search results for "{query}"</h2>' + self._render_page_list(items)
+        html = f'<h2>"{query}" 的搜索结果</h2>' + self._render_page_list(items)
 
         return Response({
-            "title": f"Search: {query}",
+            "title": f"搜索：{query}",
             "type": "system",
             "items": items,
             "compiled_html": html,
@@ -172,7 +169,7 @@ class SystemPageView(APIView):
 
     def _render_page_list(self, items):
         if not items:
-            return "<p>No pages found.</p>"
+            return "<p>未找到页面。</p>"
         rows = []
         for item in items:
             name = item.get("unix_name", "")

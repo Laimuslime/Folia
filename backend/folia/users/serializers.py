@@ -40,7 +40,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         if data["password"] != data.pop("password_confirm"):
-            raise serializers.ValidationError({"password_confirm": "Passwords do not match."})
+            raise serializers.ValidationError({"password_confirm": "两次输入的密码不一致。"})
         return data
 
     def create(self, validated_data):
