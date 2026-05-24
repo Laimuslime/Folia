@@ -14,11 +14,14 @@ function formatApiError(err: any): string {
 class ApiClient {
 	private baseUrl: string;
 	private token: string | null = null;
+	private refreshToken: string | null = null;
+	private refreshing: Promise<boolean> | null = null;
 
 	constructor(baseUrl: string) {
 		this.baseUrl = `${baseUrl}/api/v1`;
 		if (typeof window !== 'undefined') {
 			this.token = localStorage.getItem('folia_token');
+			this.refreshToken = localStorage.getItem('folia_refresh_token');
 		}
 	}
 
@@ -30,6 +33,34 @@ class ApiClient {
 			} else {
 				localStorage.removeItem('folia_token');
 			}
+		}
+	}
+
+	setRefreshToken(token: string | null) {
+		this.refreshToken = token;
+		if (typeof window !== 'undefined') {
+			if (token) {
+				localStorage.setItem('folia_refresh_token', token);
+			} else {
+				localStorage.removeItem('folia_refresh_token');
+			}
+		}
+	}
+
+	private async tryRefresh(): Promise<boolean> {
+		if (!this.refreshToken) return false;
+		try {
+			const response = await fetch(`${this.baseUrl}/auth/token/refresh/`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ refresh: this.refreshToken }),
+			});
+			if (!response.ok) return false;
+			const data = await response.json();
+			this.setToken(data.access);
+			return true;
+		} catch {
+			return false;
 		}
 	}
 
@@ -59,6 +90,24 @@ class ApiClient {
 			if (response.status === 301) {
 				return response.json();
 			}
+			if (response.status === 401 && this.refreshToken && !path.includes('/auth/token')) {
+				if (!this.refreshing) {
+					this.refreshing = this.tryRefresh().finally(() => { this.refreshing = null; });
+				}
+				const refreshed = await this.refreshing;
+				if (refreshed) {
+					headers['Authorization'] = `Bearer ${this.token}`;
+					const retry = await fetch(`${this.baseUrl}${path}`, { ...options, headers });
+					if (retry.ok) {
+						if (retry.status === 204) return null;
+						return retry.json();
+					}
+					const retryErr = await retry.json().catch(() => ({ detail: retry.statusText }));
+					throw new Error(formatApiError(retryErr));
+				}
+				this.setToken(null);
+				this.setRefreshToken(null);
+			}
 			const error = await response.json().catch(() => ({ detail: response.statusText }));
 			throw new Error(formatApiError(error));
 		}
@@ -74,6 +123,7 @@ class ApiClient {
 			body: JSON.stringify({ username, password }),
 		});
 		this.setToken(data.access);
+		this.setRefreshToken(data.refresh);
 		return data;
 	}
 
@@ -413,6 +463,7 @@ class ApiClient {
 
 	logout() {
 		this.setToken(null);
+		this.setRefreshToken(null);
 	}
 }
 
