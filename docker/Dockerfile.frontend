@@ -1,0 +1,19 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+COPY frontend/package*.json ./
+RUN npm install
+
+COPY frontend/ .
+RUN npm run build
+
+FROM node:20-alpine
+
+WORKDIR /app
+RUN npm install -g sirv-cli
+
+COPY --from=build /app/build ./build
+
+EXPOSE 5173
+CMD ["sirv", "build", "--host", "0.0.0.0", "--port", "5173", "--single"]
