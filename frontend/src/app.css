@@ -202,11 +202,14 @@ h1 a { text-decoration: none; }
 	top: 0.8em;
 	overflow: visible;
 	z-index: 25;
-	font-size: 80%;
-	color: #ccc;
+	font-size: 0.85em;
+	color: #eee;
 }
-#login-status a { margin: 0 4px; color: #ddd; }
+#login-status a { margin: 0 5px; color: #fff; }
 #login-status a:hover { color: #fff; text-decoration: underline; }
+#login-status .welcome { color: #eee; }
+#login-status .guest-hint { color: #ccc; margin-right: 5px; }
+#login-status .notif-badge { background: #d33; color: #fff; padding: 1px 6px; border-radius: 3px; font-size: 0.9em; }
 
 /* === SEARCH === */
 #search-top-box {
