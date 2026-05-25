@@ -298,12 +298,18 @@ class WikidotParser:
         for m in re.finditer(r'(\w+)\s*=\s*"([^"]*)"', module_attrs_str):
             params[m.group(1)] = m.group(2)
 
+        # 检查是否有 [[/module]] 结束标签（多行模块 vs 自闭合模块）
         content_lines = []
         i = start + 1
-        while i < len(lines) and not lines[i].strip().startswith("[[/module"):
-            content_lines.append(lines[i])
+        has_closing = any(
+            lines[j].strip().startswith("[[/module")
+            for j in range(i, len(lines))
+        )
+        if has_closing:
+            while i < len(lines) and not lines[i].strip().startswith("[[/module"):
+                content_lines.append(lines[i])
+                i += 1
             i += 1
-        i += 1
 
         # 存储正文内容
         if content_lines:
