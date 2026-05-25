@@ -26,12 +26,12 @@ class ModuleRegistry:
     def render(cls, name: str, params: dict, context: dict) -> str:
         module_class = cls.get(name)
         if not module_class:
-            return f'<div class="error-block">Module "{name}" does not exist.</div>'
+            return f'<div class="error-block">模块 "{name}" 不存在。</div>'
         module = module_class(params, context)
         try:
             return module.render()
         except Exception as e:
-            return f'<div class="error-block">Error in module "{name}": {e}</div>'
+            return f'<div class="error-block">模块 "{name}" 出错：{e}</div>'
 
 
 class BaseModule:
@@ -47,6 +47,10 @@ class BaseModule:
 
     def get_param(self, key: str, default: Any = None) -> Any:
         return self.params.get(key, default)
+
+
+from . import standard  # noqa: F401
+from . import listpages  # noqa: F401
 
 
 def parse_module_invocation(text: str) -> tuple[str, dict] | None:

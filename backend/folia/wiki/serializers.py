@@ -99,14 +99,14 @@ class PageCreateSerializer(serializers.Serializer):
     source = serializers.CharField(allow_blank=True)
     category = serializers.CharField(max_length=80, required=False, default="_default")
     tags = serializers.ListField(child=serializers.CharField(max_length=64), required=False, default=list)
-    comment = serializers.CharField(max_length=500, required=False, default="")
+    comment = serializers.CharField(max_length=500, required=False, default="", allow_blank=True)
 
 
 class PageEditSerializer(serializers.Serializer):
     title = serializers.CharField(max_length=256, required=False)
     source = serializers.CharField(required=False, allow_blank=True)
     tags = serializers.ListField(child=serializers.CharField(max_length=64), required=False)
-    comment = serializers.CharField(max_length=500, required=False, default="")
+    comment = serializers.CharField(max_length=500, required=False, default="", allow_blank=True)
 
 
 class PageRenameSerializer(serializers.Serializer):

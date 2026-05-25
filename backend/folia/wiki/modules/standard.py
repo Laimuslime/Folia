@@ -251,6 +251,21 @@ class MembersModule(BaseModule):
         return f'<div class="members-list"><ul>{"".join(items)}</ul></div>'
 
 
+@ModuleRegistry.register("Join")
+class JoinModule(BaseModule):
+    def render(self) -> str:
+        site = self.site
+        if not site:
+            return ""
+
+        button_text = self.get_param("button", "加入站点")
+        return (
+            f'<div class="join-area">'
+            f'<button class="btn btn-primary join-btn" data-site="{site.slug}">{button_text}</button>'
+            f'</div>'
+        )
+
+
 @ModuleRegistry.register("CountPages")
 class CountPagesModule(BaseModule):
     def render(self) -> str:
